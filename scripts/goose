@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+# ENV VARS
+export GOOSE_DRIVER=postgres
+export GOOSE_DBSTRING=postgres://overlord:ou812@0.0.0.0:9999/study_helper
+export GOOSE_MIGRATION_DIR=./artifacts/migrations
+
+goose $@
