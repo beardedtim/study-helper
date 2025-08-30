@@ -6,4 +6,10 @@ export default Pino({
   level: getenv.string("LOG_LEVEL", "trace"),
   serializers: Pino.stdSerializers,
   timestamp: Pino.stdTimeFunctions.isoTime,
+  transport:
+    getenv.string("ENVIRONMENT") === "development"
+      ? {
+          target: "pino-pretty",
+        }
+      : undefined,
 });
