@@ -57,3 +57,11 @@ pnpm dev:api
 ```sh
 pnpm dev:client
 ```
+
+## Screenshots
+
+> Basic LLM Flow Working
+
+![Basic Steps](./artifacts/imgs/steps.png)
+![Step Output](./artifacts/imgs/steps-output.png)
+![Basic Thinking and Response](./artifacts/imgs/after-thinking.png)
