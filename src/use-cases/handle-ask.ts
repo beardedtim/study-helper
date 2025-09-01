@@ -4,6 +4,8 @@ import * as LLM from "../connections/llm";
 import * as QueryDomain from "../domains/query";
 import { SSEStreamingApi } from "hono/streaming";
 import { genGoodEnoughID } from "../shared/utils";
+import { SYSTEM_THEOLOGICAL_MENTOR } from "../prompts";
+import getenv from "getenv";
 
 const log = Log.child({
   name: "use-case::handle-ask",
@@ -101,7 +103,7 @@ const handleAsk = async ({
         event: "action-output",
       });
 
-      minChunkLength = minChunkLength * 2;
+      minChunkLength += 126;
     }
   }
 
@@ -115,6 +117,68 @@ const handleAsk = async ({
       },
     }),
     event: "action-end",
+  });
+
+  log.info(
+    "Now I am going to use to final question text to ask a smarter LLM about it"
+  );
+
+  const answerId = genGoodEnoughID({
+    prefix: "answer-",
+    length: 15,
+  });
+
+  await stream.writeSSE({
+    id: genGoodEnoughID({ prefix: "answer-", length: 15 }),
+    data: JSON.stringify({
+      id: answerId,
+      meta: {
+        instanceId,
+      },
+    }),
+    event: "answer-start",
+  });
+
+  const answerStream = await LLM.chat({
+    messages: [
+      {
+        role: "system",
+        content: SYSTEM_THEOLOGICAL_MENTOR,
+      },
+      {
+        role: "user",
+        content: questionText,
+      },
+    ],
+    model: getenv.string("QUESTION_ANSWER_MODEL", "phi4-mini-reasoning"),
+    stream: true,
+  });
+
+  for await (const chunk of answerStream) {
+    const nextTextChunk = chunk.message.content;
+
+    await stream.writeSSE({
+      id: genGoodEnoughID({ prefix: "answer-output-", length: 15 }),
+      data: JSON.stringify({
+        id: answerId,
+        chunk: nextTextChunk,
+        meta: {
+          instanceId,
+        },
+      }),
+      event: "answer-output",
+    });
+  }
+
+  await stream.writeSSE({
+    id: genGoodEnoughID({ prefix: "answer-", length: 15 }),
+    data: JSON.stringify({
+      id: answerId,
+      meta: {
+        instanceId,
+      },
+    }),
+    event: "answer-stop",
   });
 
   await stream.writeSSE({

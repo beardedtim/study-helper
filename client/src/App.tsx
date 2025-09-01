@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Box, Button, ButtonGroup, Text, Textarea } from "@chakra-ui/react";
+import { Prose } from "@/components/ui/prose";
+
 import "./App.css";
 import useAsk from "./hooks/useAsk";
 import Markdown from "react-markdown";
@@ -11,7 +13,7 @@ function App() {
 
   return (
     <Box display="flex" width="full" height="full">
-      <Box>
+      <Box width="25%">
         <Box>
           <Textarea
             name="query"
@@ -62,9 +64,11 @@ function App() {
           </ButtonGroup>
         </Box>
       </Box>
-      <Box>
+      <Box width="75%" height="full" overflowY="auto" padding="4">
         {response && (
-          <Markdown remarkPlugins={[remarkGfm]}>{response}</Markdown>
+          <Prose>
+            <Markdown remarkPlugins={[remarkGfm]}>{response}</Markdown>
+          </Prose>
         )}
       </Box>
     </Box>

@@ -55,8 +55,10 @@ ${query.why ?? "Unknown Reason"}
 
               case "action-start": {
                 const data = JSON.parse(event.data);
-                setResponse((res) =>
-                  `
+                setResponse(
+                  (res) =>
+                    res +
+                    `
 
 ## Started Process
 
@@ -69,8 +71,10 @@ ${query.why ?? "Unknown Reason"}
               case "action-end": {
                 const data = JSON.parse(event.data);
 
-                setResponse((res) =>
-                  `
+                setResponse(
+                  (res) =>
+                    res +
+                    `
 ## Step Done
 
 > Process: ${data.id}
@@ -82,6 +86,43 @@ ${data.output}
                   `.trimEnd()
                 );
 
+                break;
+              }
+              case "answer-start": {
+                setResponse(
+                  (res) =>
+                    res +
+                    `
+# Answer
+
+                  `.trimEnd()
+                );
+                break;
+              }
+
+              case "answer-output": {
+                const data = JSON.parse(event.data);
+                if (data.chunk === "<think>") {
+                  setResponse(
+                    (res) =>
+                      res +
+                      `
+## Thinking
+                    
+`.trimEnd()
+                  );
+                } else if (data.chunk === "</think>") {
+                  setResponse(
+                    (res) =>
+                      res +
+                      `
+## End Thinking
+                    
+`.trimEnd()
+                  );
+                } else {
+                  setResponse((res) => res + data.chunk);
+                }
                 break;
               }
               case "ask-end": {
