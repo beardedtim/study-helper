@@ -4,3 +4,8 @@ services:
     ports:
       - "9999:5432"
     env_file: .env.db
+
+  vectors:
+    image: chromadb/chroma
+    ports:
+      - "9998:8000"

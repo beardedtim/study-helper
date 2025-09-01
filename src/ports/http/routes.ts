@@ -3,8 +3,12 @@ import { z } from "zod";
 import { sql, NoResultError } from "kysely";
 import { app } from "./server";
 import * as NotesDomain from "../../domains/notes";
+import * as QueryDomain from "../../domains/query";
 import Log from "../../shared/log";
 import DB from "../../connections/db";
+import * as LLM from "../../connections/llm";
+import { streamSSE } from "hono/streaming";
+import handleAsk from "../../use-cases/handle-ask";
 
 const healthCheckSchema = createRoute({
   method: "get",
@@ -149,6 +153,33 @@ const deleteNoteByIdSchema = createRoute({
   },
 });
 
+const askSchema = createRoute({
+  method: "post",
+  path: "/ask",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.any(),
+        },
+        "text/event-stream": {
+          schema: z.any(),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.any(),
+        },
+      },
+      description: "An answer to our query",
+    },
+  },
+});
+
 export const attachRoutes = () => {
   app
     .openapi(healthCheckSchema, async (c) => {
@@ -219,5 +250,15 @@ export const attachRoutes = () => {
       });
 
       return c.body(null, 204) as any;
+    })
+    .openapi(askSchema, async (c) => {
+      const body = await c.req.json();
+      return streamSSE(c, async (stream) => {
+        await handleAsk({
+          query: body.query,
+          why: body.why,
+          stream,
+        });
+      }) as any;
     });
 };

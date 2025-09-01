@@ -1,8 +1,11 @@
 import { serve, type ServerType } from "@hono/node-server";
 import getenv from "getenv";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { cors } from "hono/cors";
 
 export const app = new OpenAPIHono();
+
+app.use(cors());
 
 let server: ServerType;
 
