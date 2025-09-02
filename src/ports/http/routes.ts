@@ -3,12 +3,12 @@ import { z } from "zod";
 import { sql, NoResultError } from "kysely";
 import { app } from "./server";
 import * as NotesDomain from "../../domains/notes";
-import * as QueryDomain from "../../domains/query";
 import Log from "../../shared/log";
 import DB from "../../connections/db";
-import * as LLM from "../../connections/llm";
+import * as MQ from "../../connections/mq";
 import { streamSSE } from "hono/streaming";
 import handleAsk from "../../use-cases/handle-ask";
+import log from "../../shared/log";
 
 const healthCheckSchema = createRoute({
   method: "get",
@@ -180,6 +180,34 @@ const askSchema = createRoute({
   },
 });
 
+const ingestSchema = createRoute({
+  method: "post",
+  path: "/ingest",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            url: z.url(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    202: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            id: z.string(),
+          }),
+        },
+      },
+      description: "If we have successfully started ingesting",
+    },
+  },
+});
+
 export const attachRoutes = () => {
   app
     .openapi(healthCheckSchema, async (c) => {
@@ -260,5 +288,24 @@ export const attachRoutes = () => {
           stream,
         });
       }) as any;
+    })
+    .openapi(ingestSchema, async (c) => {
+      log.info("Ingest Requested");
+      const body = await c.req.json();
+      const id = crypto.randomUUID();
+
+      const req = {
+        id,
+        data: body,
+      };
+
+      await MQ.publisher.send("ingest", req);
+
+      return c.json(
+        {
+          id,
+        },
+        202
+      );
     });
 };

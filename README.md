@@ -58,6 +58,22 @@ pnpm dev:api
 pnpm dev:client
 ```
 
+## Ingest
+
+In order to be able to use RAG on more than just your notes,
+you will need to `ingest` some documents. We use `python` for
+that, utilizing `venv` for management.
+
+> TODO: add requirements.txt or whatever the heck pip needs
+>
+> For now it's zmq and docling
+
+### File ExplorerE
+
+You can use `http://localhost:9994` to use Console to explore
+the Object Storage/File Server MinIO. It is an S3-compatible
+storage for all of the files we will be ingesting.
+
 ## Screenshots
 
 > Basic LLM Flow Working
