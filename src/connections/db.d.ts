@@ -11,7 +11,30 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
 
 export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
 
+export type Json = JsonValue;
+
+export type JsonArray = JsonValue[];
+
+export type JsonObject = {
+  [x: string]: JsonValue | undefined;
+};
+
+export type JsonPrimitive = boolean | number | string | null;
+
+export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export interface Chunks1024 {
+  chunk: string;
+  created_at: Generated<Timestamp>;
+  embeddings: string;
+  id: Generated<string>;
+  metadata: Json | null;
+  model: string;
+  source_id: string | null;
+  updated_at: Generated<Timestamp>;
+}
 
 export interface GooseDbVersion {
   id: Generated<number>;
@@ -20,20 +43,15 @@ export interface GooseDbVersion {
   version_id: Int8;
 }
 
-export interface NoteReferences {
-  note_id: string;
-  ref: string;
-}
-
-export interface Notes {
+export interface Sources {
   created_at: Generated<Timestamp>;
   id: Generated<string>;
-  note: string;
-  updated_at: Generated<Timestamp>;
+  metadata: Json | null;
+  source: string;
 }
 
 export interface DB {
+  chunks_1024: Chunks1024;
   goose_db_version: GooseDbVersion;
-  note_references: NoteReferences;
-  notes: Notes;
+  sources: Sources;
 }

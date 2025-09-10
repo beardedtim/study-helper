@@ -9,16 +9,87 @@ import json
 import sys
 import requests
 from io import BytesIO
+import os
 import hashlib
 from datetime import datetime
 from minio import Minio
 from minio.error import S3Error
 from chonkie import RecursiveChunker
 from ollama import embed
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import psycopg2.pool
 
-import chromadb
-client = chromadb.HttpClient(host="localhost", port=9998)
 
+def setup_postgres_connection():
+    """
+    Set up PostgreSQL connection pool.
+    Adjust these parameters according to your PostgreSQL setup.
+    """
+    return psycopg2.pool.SimpleConnectionPool(
+        minconn=1,
+        maxconn=10,
+        host="0.0.0.0",
+        port=9999,
+        database="study_helper",
+        user="overlord",
+        password="ou812"
+    )
+
+postgres_conn = setup_postgres_connection()
+
+
+def save_chunk(source_id, start, end, embedding, text, model="default-embedding-model"):
+    """
+    Save a text chunk with its embedding to the chunks_1024 table.
+    
+    Args:
+        source_id (UUID): Reference to the source document
+        start (int): Starting position of the chunk in the source
+        end (int): Ending position of the chunk in the source
+        embedding (list): The 1024-dimensional embedding vector
+        text (str): The actual text content of the chunk
+        model (str): The embedding model used (optional, defaults to "default-embedding-model")
+    
+    Returns:
+        UUID: The ID of the inserted chunk, or None if insertion failed
+    """
+    try:
+        conn = postgres_conn.getconn()
+        try:
+            with conn.cursor() as cursor:
+                # Prepare the metadata with start and end positions
+                metadata = {
+                    "start": start,
+                    "end": end
+                }
+                
+                # Insert the chunk into the database
+                insert_query = """
+                    INSERT INTO chunks_1024 (embeddings, chunk, metadata, model, source_id)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id;
+                """
+                
+                cursor.execute(insert_query, (
+                    embedding,  # PostgreSQL will handle the vector conversion
+                    text,
+                    json.dumps(metadata),   # JSONB conversion
+                    model,
+                    source_id
+                ))
+                
+                # Get the generated ID
+                result = cursor.fetchone()
+                chunk_id = result[0] if result else None
+                cursor.connection.commit()
+                return chunk_id
+        finally:
+            # Always return connection to pool
+            postgres_conn.putconn(conn)
+    except Exception as e:
+        print(f"Error saving chunk: {e}")
+        return None
 
 def setup_minio_client():
     """
@@ -134,7 +205,7 @@ def getEmbeddings(text):
     """
     try:
         # Use ollama sdk to get embeddings
-        return embed(model="all-minilm", input=text)["embeddings"][0]
+        return embed(model="ryanshillington/Qwen3-Embedding-0.6B", input=text)["embeddings"][0]
 
     except requests.RequestException as e:
         print(f"Error fetching embeddings: {e}")
@@ -157,10 +228,11 @@ def process_message(body, minio_client):
             s3_info = record.get('s3', {})
             bucket_name = s3_info.get('bucket', {}).get('name')
             object_key = s3_info.get('object', {}).get('key')
-
+            
+            source_id = os.path.splitext(object_key)[0] 
             print(f"Processing object: {object_key} from bucket: {bucket_name}")
             
-            if not bucket_name or not object_key:
+            if not bucket_name or not object_key or not source_id:
                 print("Invalid message format: missing bucket or object key")
                 continue
 
@@ -174,23 +246,31 @@ def process_message(body, minio_client):
             data = response_stream.read()
             txt = data.decode('utf-8')
             chunks = chunk_data(txt)
+            source_id = os.path.splitext(object_key)[0] 
             print(f"Chunked data into {len(chunks)} chunks")
             for i, chunk in enumerate(chunks):
                 chunk_text = chunk.text
                 start_index = chunk.start_index
                 end_index = chunk.end_index
                 embedding = getEmbeddings(chunk_text)
-                # Save to chromadb
+                 # Save to PostgreSQL using our new function
                 if embedding:
-                    print("I should save to chromadb here")
-                    print(embedding)
-                    collection = client.get_or_create_collection(name="all-minilm")
-                    collection.add(
-                        documents=[chunk_text],
-                        embeddings=[embedding],
-                        ids=[f"{object_key}-{i}-{datetime.utcnow().isoformat()}"],
-                        metadatas=[{"start": start_index, "end": end_index, "url": f"{bucket_name}/{object_key}"}],
+                    chunk_id = save_chunk(
+                        source_id=source_id,
+                        start=start_index,
+                        end=end_index,
+                        embedding=embedding,
+                        text=chunk_text,
+                        model="ryanshillington/Qwen3-Embedding-0.6B"
                     )
+                    
+                    if chunk_id:
+                        print(f"Saved chunk {i+1}/{len(chunks)} with ID: {chunk_id}")
+                    else:
+                        print(f"Failed to save chunk {i+1}/{len(chunks)}")
+                else:
+                    print(f"No embedding generated for chunk {i+1}/{len(chunks)}")
+                    
 
             response_stream.close()
         

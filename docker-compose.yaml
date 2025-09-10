@@ -1,14 +1,9 @@
 services:
   database:
-    image: postgres:17
+    image: pgvector/pgvector:pg17-trixie
     ports:
       - "9999:5432"
     env_file: .env.db
-
-  vectors:
-    image: chromadb/chroma
-    ports:
-      - "9998:8000"
 
   messages:
     image: rabbitmq:4-management

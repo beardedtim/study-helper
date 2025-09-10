@@ -80,22 +80,17 @@ def stream_to_minio(minio_client, bucket_name, object_name, response_stream, con
         # Always close the response stream
         response_stream.close()
 
-def generate_object_name(url, id, content_type):
+def generate_object_name(id, content_type):
     """
     Generate a unique object name for MinIO storage.
     
     Args:
-        url: Source URL
-        id: Message ID
+        id: Source ID
         content_type: Content type from response
         
     Returns:
         str: Object name with appropriate extension
     """
-    # Create a hash of the URL for uniqueness
-    url_hash = hashlib.md5(url.encode()).hexdigest()[:10]
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
     # Determine file extension from content type
     extension_map = {
         'text/plain': 'txt',
@@ -112,7 +107,7 @@ def generate_object_name(url, id, content_type):
     # Get extension from content type or default to 'bin'
     ext = extension_map.get(content_type.split(';')[0].strip(), 'bin')
     
-    return f"{id}_{timestamp}_{url_hash}.{ext}"
+    return f"{id}.{ext}"
 
 def stream_content_from_url(url):
     try:
@@ -150,11 +145,13 @@ def process_message(body, minio_client):
         id = message.get('id')
         data = message.get('data')
         url = data.get('url')
-        if not url:
-            print('Error: No url given')
+        source_id = data.get('source_id')
+
+        if not url or not source_id:
+            print('Error: No url or source_id given')
             return
         
-        print(f"Processing: {id}")
+        print(f"Processing: {id} from source {source_id}")
         print(f"URL: {url}")
         response_stream, content_length, content_type = stream_content_from_url(url)
 
@@ -164,16 +161,16 @@ def process_message(body, minio_client):
             print(f"Content length: {content_length if content_length > 0 else 'unknown'}")
             
             # Generate object name for MinIO (now includes proper extension)
-            object_name = generate_object_name(url, id, content_type)
+            object_name = generate_object_name(source_id, content_type)
             bucket_name = "ingest"  # Adjust bucket name as needed
             
             # Stream directly to MinIO
             success = stream_to_minio(minio_client, bucket_name, object_name, response_stream, content_length, content_type)
             
             if success:
-                print(f"Document {id} successfully streamed and uploaded to MinIO")
+                print(f"Document {source_id} successfully streamed and uploaded to MinIO")
             else:
-                print(f"Failed to stream document {id} to MinIO")
+                print(f"Failed to stream document {source_id} to MinIO")
         else:
             print(f"Failed to open stream from {url}")
         

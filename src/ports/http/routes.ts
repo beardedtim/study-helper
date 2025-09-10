@@ -3,6 +3,7 @@ import { z } from "zod";
 import { sql, NoResultError } from "kysely";
 import { app } from "./server";
 import * as NotesDomain from "../../domains/notes";
+import * as SourcesDomain from "../../domains/sources";
 import Log from "../../shared/log";
 import DB from "../../connections/db";
 import * as MQ from "../../connections/mq";
@@ -292,18 +293,30 @@ export const attachRoutes = () => {
     .openapi(ingestSchema, async (c) => {
       log.info("Ingest Requested");
       const body = await c.req.json();
-      const id = crypto.randomUUID();
+
+      const source = await SourcesDomain.Repo.createSource({
+        db: DB,
+        source: {
+          source: body.url,
+          metadata: { ingestedAt: new Date().toISOString() },
+        },
+      });
+
+      log.info({ source }, "Created source");
 
       const req = {
-        id,
-        data: body,
+        id: source.id,
+        data: {
+          url: body.url,
+          source_id: source.id,
+        },
       };
 
       await MQ.publisher.send("ingest", req);
 
       return c.json(
         {
-          id,
+          id: source.id,
         },
         202
       );
