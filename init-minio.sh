@@ -15,7 +15,21 @@ wait_for_minio
 # Create bucket if it doesn't exist
 mc mb myminio/ingest --ignore-existing || true
 
-# Add event notification (target already defined by env vars)
+# Add or update RabbitMQ (AMQP) notification target
+mc admin config set myminio notify_amqp:rabbit \
+  url="amqp://guest:guest@messages:5672/" \
+  exchange="minio.events" \
+  exchange_type="fanout" \
+  routing_key="minio.ingest" \
+  delivery_mode="0" \
+  mandatory="off" \
+  durable="on" \
+  no_wait="off" \
+  internal="off" \
+  auto_deleted="off" \
+  --json
+
+# Add event notification for the bucket using the rabbit target
 mc event add myminio/ingest arn:minio:sqs::PRIMARY:amqp --event put --ignore-existing || true
 
-echo "✅ MinIO initialization complete"
+echo

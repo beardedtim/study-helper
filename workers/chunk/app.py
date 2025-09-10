@@ -8,12 +8,17 @@ import pika
 import json
 import sys
 import requests
-from minio import Minio
-from minio.error import S3Error
 from io import BytesIO
 import hashlib
 from datetime import datetime
-from docling.document_converter import DocumentConverter
+from minio import Minio
+from minio.error import S3Error
+from chonkie import RecursiveChunker
+from ollama import embed
+
+import chromadb
+client = chromadb.HttpClient(host="localhost", port=9998)
+
 
 def setup_minio_client():
     """
@@ -80,62 +85,60 @@ def stream_to_minio(minio_client, bucket_name, object_name, response_stream, con
         # Always close the response stream
         response_stream.close()
 
-def generate_object_name(url, id, content_type):
+def stream_from_minoio(minio_client, bucket_name, object_name):
     """
-    Generate a unique object name for MinIO storage.
+    Stream content directly from MinIO.
     
     Args:
-        url: Source URL
-        id: Message ID
-        content_type: Content type from response
+        minio_client: MinIO client instance
+        bucket_name: Target bucket name
+        object_name: Object name in MinIO
         
     Returns:
-        str: Object name with appropriate extension
+        response_stream: HTTP response stream or None if error
     """
-    # Create a hash of the URL for uniqueness
-    url_hash = hashlib.md5(url.encode()).hexdigest()[:10]
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Determine file extension from content type
-    extension_map = {
-        'text/plain': 'txt',
-        'text/html': 'html',
-        'application/pdf': 'pdf',
-        'application/json': 'json',
-        'application/xml': 'xml',
-        'text/xml': 'xml',
-        'text/csv': 'csv',
-        'application/msword': 'doc',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-    }
-    
-    # Get extension from content type or default to 'bin'
-    ext = extension_map.get(content_type.split(';')[0].strip(), 'bin')
-    
-    return f"{id}_{timestamp}_{url_hash}.{ext}"
-
-def stream_content_from_url(url):
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (compatible; StudyHelper/0.0.1; Educational Research Tool; +https://github.com/beardedtim/study-helper)'
-        }
+        response = minio_client.get_object(bucket_name, object_name)
+        print(f"Successfully retrieved {object_name} from bucket {bucket_name}")
+        return response
         
-        response = requests.get(url, headers=headers, timeout=30, stream=True)
-        response.raise_for_status()
-        
-        content_length = response.headers.get('content-length')
-        # get content length or default to -1
-        content_length = int(content_length) if content_length else -1
-        
-        # get content length or default to octet
-        content_type = response.headers.get('content-type', 'application/octet-stream').lower()
-        
-        return response, content_length, content_type
-            
+    except S3Error as e:
+        print(f"MinIO error retrieving {object_name}: {e}")
+        return None
     except Exception as e:
-        print(f"Error streaming content from {url}: {e}")
-        return None, None, None
+        print(f"Error retrieving {object_name} from MinIO: {e}")
+        return None
 
+def chunk_data(data):
+    """
+    Chunk data into smaller pieces.
+    Args:
+        data: Input text data
+        chunk_size: Desired chunk size in tokens
+    Returns:
+        Chunkie object with chunks
+    """
+    chunker = RecursiveChunker()
+
+    return chunker.chunk(data)
+
+def getEmbeddings(text):
+    """
+    Get embeddings for the given text using an external API.
+    
+    Args:
+        text: Input text string
+        
+    Returns:
+        list: Embedding vector or None if error
+    """
+    try:
+        # Use ollama sdk to get embeddings
+        return embed(model="all-minilm", input=text)["embeddings"][0]
+
+    except requests.RequestException as e:
+        print(f"Error fetching embeddings: {e}")
+        return None
 
 def process_message(body, minio_client):
     """
@@ -147,35 +150,49 @@ def process_message(body, minio_client):
     try:
         # Parse JSON message
         message = json.loads(body.decode('utf-8'))
-        id = message.get('id')
-        data = message.get('data')
-        url = data.get('url')
-        if not url:
-            print('Error: No url given')
-            return
         
-        print(f"Processing: {id}")
-        print(f"URL: {url}")
-        response_stream, content_length, content_type = stream_content_from_url(url)
+        # Extract relevant fields
+        records = message.get('Records', [])
+        for record in records:
+            s3_info = record.get('s3', {})
+            bucket_name = s3_info.get('bucket', {}).get('name')
+            object_key = s3_info.get('object', {}).get('key')
 
-        if response_stream:
-            print(f"Successfully opened stream from {url}")
-            print(f"Content type: {content_type}")
-            print(f"Content length: {content_length if content_length > 0 else 'unknown'}")
+            print(f"Processing object: {object_key} from bucket: {bucket_name}")
             
-            # Generate object name for MinIO (now includes proper extension)
-            object_name = generate_object_name(url, id, content_type)
-            bucket_name = "ingest"  # Adjust bucket name as needed
+            if not bucket_name or not object_key:
+                print("Invalid message format: missing bucket or object key")
+                continue
+
+            # Download the object from MinIO
+            response_stream = stream_from_minoio(minio_client, bucket_name, object_key)
+            if response_stream is None:
+                print(f"Failed to retrieve object {object_key} from bucket {bucket_name}")
+                continue
             
-            # Stream directly to MinIO
-            success = stream_to_minio(minio_client, bucket_name, object_name, response_stream, content_length, content_type)
-            
-            if success:
-                print(f"Document {id} successfully streamed and uploaded to MinIO")
-            else:
-                print(f"Failed to stream document {id} to MinIO")
-        else:
-            print(f"Failed to open stream from {url}")
+            # Chunk data
+            data = response_stream.read()
+            txt = data.decode('utf-8')
+            chunks = chunk_data(txt)
+            print(f"Chunked data into {len(chunks)} chunks")
+            for i, chunk in enumerate(chunks):
+                chunk_text = chunk.text
+                start_index = chunk.start_index
+                end_index = chunk.end_index
+                embedding = getEmbeddings(chunk_text)
+                # Save to chromadb
+                if embedding:
+                    print("I should save to chromadb here")
+                    print(embedding)
+                    collection = client.get_or_create_collection(name="all-minilm")
+                    collection.add(
+                        documents=[chunk_text],
+                        embeddings=[embedding],
+                        ids=[f"{object_key}-{i}-{datetime.utcnow().isoformat()}"],
+                        metadatas=[{"start": start_index, "end": end_index, "url": f"{bucket_name}/{object_key}"}],
+                    )
+
+            response_stream.close()
         
     except json.JSONDecodeError:
         print(f"Invalid JSON message: {body}")
@@ -210,9 +227,12 @@ def main():
         # Connect to RabbitMQ
         connection = pika.BlockingConnection(connection_params)
         channel = connection.channel()
-        
-        queue_name = 'ingest'
+        # This must match the exchange MinIO is configured to use
+        exchange_name = "minio-events"
+        queue_name = "ingest-events"
+        # Declare the queue and bind it to the exchange
         channel.queue_declare(queue=queue_name, durable=True)
+        channel.queue_bind(queue=queue_name, exchange=exchange_name)
         
         # Set up fair dispatch (one message per worker at a time)
         channel.basic_qos(prefetch_count=1)

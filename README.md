@@ -66,7 +66,7 @@ that, utilizing `venv` for management.
 
 > TODO: add requirements.txt or whatever the heck pip needs
 >
-> For now it's zmq and docling
+> For now it's rmq and docling
 
 ### File ExplorerE
 
