@@ -1,0 +1,44 @@
+https://www.gutenberg.org/cache/epub/3296/pg3296.txt::The Confessions of St. Augustine::St Augustine
+https://www.gutenberg.org/cache/epub/1653/pg1653.txt::The Imitation of Christ::Kempis Thomas
+https://www.gutenberg.org/cache/epub/17611/pg17611.txt::Summa Theologica, Part I (Prima Pars)::St Thomas Aquinas
+https://www.gutenberg.org/cache/epub/17897/pg17897.txt::Summa Theologica, Part I-II (Pars Prima Secundae)::St Thomas Aquinas
+https://www.gutenberg.org/cache/epub/19950/pg19950.txt::Summa Theologica, Part III (Tertia Pars)::St Thomas Aquinas
+https://www.gutenberg.org/cache/epub/53527/pg53527.txt::The Existence and Attributes of God, Volumes 1 and 2::Stephen Charnock
+https://www.gutenberg.org/cache/epub/418/pg418.txt::A Treatise on Good Works::Martin Luther
+https://www.gutenberg.org/cache/epub/5657/pg5657.txt::The Practice of the Presence of God::Brother Lawrence
+https://www.gutenberg.org/cache/epub/1670/pg1670.txt::Luther's Little Instruction Book: The Small Catechism of Martin Luther::Martin Luther
+https://www.gutenberg.org/cache/epub/14551/pg14551.txt::A catechism of Christian doctrine, no. 1::J. De Concilio
+https://www.gutenberg.org/cache/epub/14552/pg14552.txt::A catechism of Christian doctrine, no. 2::J. De Concilio
+https://www.gutenberg.org/cache/epub/14553/pg14553.txt::A catechism of Christian doctrine, no. 3::J. De Concilio
+https://www.gutenberg.org/cache/epub/14554/pg14554.txt::An explanation of the Baltimore catechism of Christian doctrine::Thomas L. Kinkead
+https://www.gutenberg.org/cache/epub/25141/pg25141.txt::The Pursuit of God::A. W. Tozer
+https://www.gutenberg.org/cache/epub/48247/pg48247.txt::Prayers of the Early Church::J. Manning Potts
+https://ccel.org/ccel/s/schaff/npnf204/cache/npnf204.txt::Athanasius: Select Works and Letters::Athanasius
+https://ccel.org/ccel/a/athanasius/incarnation/cache/incarnation.txt::On the Incarnation of the Word::Athanasius
+https://ccel.org/ccel/b/bible/web/cache/web.txt::WEB Bible::Anonymous
+https://ccel.org/ccel/b/boethius/trinity/cache/trinity.txt::The Trinity is One God Not Three Gods::Boethius
+https://ccel.org/ccel/b/bounds/essentials/cache/essentials.txt::The Essentials of Prayer::E.M. Bounds
+https://ccel.org/ccel/b/bounds/necessity/cache/necessity.txt::The Necessity of Prayer::E.M. Bounds
+https://ccel.org/ccel/b/bounds/power/cache/power.txt::Power Through Prayer::E.M. Bounds
+https://ccel.org/ccel/b/bounds/prayingmen/cache/prayingmen.txt::Prayer and Praying Men::E.M. Bounds
+https://ccel.org/ccel/b/bounds/purpose/cache/purpose.txt::Purpose in Prayer::E.M. Bounds
+https://ccel.org/ccel/b/bounds/reality/cache/reality.txt::The Reality of Prayer::E.M. Bounds
+https://ccel.org/ccel/b/bounds/weapon/cache/weapon.txt::The Weapon of Prayer::E.M. Bounds
+https://ccel.org/ccel/e/eckhart/sermons/cache/sermons.txt::Meister Eckhart's Sermons::Johannes Eckhart
+https://ccel.org/ccel/e/edwards/will/cache/will.txt::Freedom of the Will::Jonathan Edwards
+https://ccel.org/ccel/e/edwards/affections/cache/affections.txt::Religious Affections::Jonathan Edwards
+https://ccel.org/ccel/e/edwards/sermons/cache/sermons.txt::Select Sermons::Jonathan Edwards
+https://ccel.org/ccel/e/edwards/treatiseongrace/cache/treatiseongrace.txt::Treatise on Grace::Jonathan Edwards
+https://ccel.org/ccel/l/luther/first_prin/cache/first_prin.txt::First Principles of the Reformation or the Ninety-five Theses and the Three Primary Works::Martin Luther
+https://ccel.org/ccel/l/luther/largecatechism/cache/largecatechism.txt::The Large Catechism::Martin Luther
+https://ccel.org/ccel/e/edwards/works1/cache/works1.txt::The Works of Jonathan Edwards, Volume One::Jonathan Edwards
+https://ccel.org/ccel/e/edwards/will/cache/will.txt::Freedom of the Will::Jonathan Edwards
+https://ccel.org/ccel/e/edwards/affections/cache/affections.txt::Religious Affections::Jonathan Edwards
+https://ccel.org/ccel/e/edwards/sermons/cache/sermons.txt::Select Sermons::Jonathan Edwards
+https://ccel.org/ccel/e/edwards/treatiseongrace/cache/treatiseongrace.txt::Treatise on Grace::Jonathan Edwards
+https://ccel.org/ccel/c/cranmer/doctrine/cache/doctrine.txt::Necessary Doctrine::Thomas Cranmer
+https://ccel.org/ccel/w/wesley/sermons/cache/sermons.txt::Sermons on Several Occasions::John Wesley
+https://ccel.org/ccel/w/wesley/journal/cache/journal.txt::The Journal of John Wesley::John Wesley
+https://ccel.org/ccel/w/wesley/perfection/cache/perfection.txt::A Plain Account of Christian Perfection::John Wesley
+https://ccel.org/ccel/w/wesley/notes/cache/notes.txt::Wesley's Notes on the Bible::John Wesley
+https://ccel.org/ccel/a/augustine/enchiridion/cache/enchiridion.txt::Handbook on Faith, Hope, and Love::St Augustine

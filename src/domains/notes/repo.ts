@@ -55,49 +55,21 @@ export const getNoteById = async ({ db, id }: GetNoteByIdReq) => {
     .executeTakeFirstOrThrow();
 };
 
+export interface ListNotesReq {
+  db: Kysely<DB>;
+}
+
+export const listNotes = async ({ db }: ListNotesReq) => {
+  return db.selectFrom("notes").selectAll().execute();
+};
+
 export interface AttachReferencesToNotesReq {
   db: Kysely<DB>;
   id: string;
   refs: string[];
 }
 
-export const attachReferencesToNote = async ({
-  db,
-  id,
-  refs,
-}: AttachReferencesToNotesReq) => {
-  await db
-    .insertInto("note_references")
-    .values(
-      refs.map((ref) => ({
-        note_id: id,
-        ref,
-      }))
-    )
-    .execute();
-};
-
 export interface GetNotesWithReferencesReq {
   db: Kysely<DB>;
   ids: string[];
 }
-
-export const getNoteswithReferences = async ({
-  db,
-  ids,
-}: GetNotesWithReferencesReq) => {
-  return db
-    .selectFrom("notes")
-    .leftJoin("note_references", "notes.id", "note_references.note_id")
-    .selectAll("notes")
-    .select(
-      sql<
-        string[]
-      >`ARRAY_AGG(note_references.ref) FILTER (WHERE note_references.ref IS NOT NULL)`.as(
-        "refs"
-      )
-    )
-    .where("notes.id", "in", ids)
-    .groupBy("notes.id")
-    .execute();
-};

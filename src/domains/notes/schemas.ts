@@ -2,7 +2,9 @@ import { z } from "zod";
 
 export const NoteSchema = z.object({
   id: z.uuid(),
-  note: z.string(),
+  title: z.string(),
+  content: z.string(),
+  metadata: z.record(z.string(), z.any()).optional().nullable(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
 });

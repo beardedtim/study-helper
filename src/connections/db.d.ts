@@ -43,6 +43,15 @@ export interface GooseDbVersion {
   version_id: Int8;
 }
 
+export interface Notes {
+  content: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  metadata: Json | null;
+  title: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Sources {
   created_at: Generated<Timestamp>;
   id: Generated<string>;
@@ -53,5 +62,6 @@ export interface Sources {
 export interface DB {
   chunks_1024: Chunks1024;
   goose_db_version: GooseDbVersion;
+  notes: Notes;
   sources: Sources;
 }

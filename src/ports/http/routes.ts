@@ -45,9 +45,7 @@ const createNoteSchema = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: NotesDomain.Schemas.CreateNoteSchema.extend({
-            refs: z.array(z.string()).optional(),
-          }),
+          schema: NotesDomain.Schemas.CreateNoteSchema,
         },
       },
     },
@@ -62,6 +60,35 @@ const createNoteSchema = createRoute({
         },
       },
       description: "The newly created note",
+    },
+    500: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({
+              message: z.string(),
+            }),
+          }),
+        },
+      },
+      description: "There was an issue perfofrming the request",
+    },
+  },
+});
+
+const listNotesSchema = createRoute({
+  method: "get",
+  path: "/notes",
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            data: z.array(NotesDomain.Schemas.NoteSchema),
+          }),
+        },
+      },
+      description: "A list of notes",
     },
     500: {
       content: {
@@ -211,7 +238,7 @@ const ingestSchema = createRoute({
 
 export const attachRoutes = () => {
   app
-    .openapi(healthCheckSchema, async (c) => {
+    .openapi(healthCheckSchema, async (c: any) => {
       try {
         // If the DB does not throw, we are healthy
         await sql`SELECT NOW()`.execute(DB);
@@ -223,42 +250,34 @@ export const attachRoutes = () => {
         return c.json({ healthy: false }, 500);
       }
     })
-    .openapi(createNoteSchema, async (c) => {
-      const body = await c.req.json();
+    .openapi(createNoteSchema, async (c: any) => {
+      const body = await c.req.valid("json");
 
       const result = await NotesDomain.Repo.createNote({
         db: DB,
         note: body,
       });
 
-      if (body.refs) {
-        await NotesDomain.Repo.attachReferencesToNote({
-          db: DB,
-          id: result.id,
-          refs: body.refs,
-        });
-      }
-
       return c.json({ data: result }, 201);
     })
-    .openapi(getNoteByIdSchema, async (c) => {
+    .openapi(listNotesSchema, async (c: any) => {
+      const results = await NotesDomain.Repo.listNotes({
+        db: DB,
+      });
+
+      return c.json({ data: results }, 200);
+    })
+    .openapi(getNoteByIdSchema, async (c: any) => {
       const id = await c.req.param("id");
       try {
-        const result = await NotesDomain.Repo.getNoteswithReferences({
+        const result = await NotesDomain.Repo.getNoteById({
           db: DB,
-          ids: [id],
+          id,
         });
-
-        if (!result.length) {
-          return c.json({ error: { message: `No Note:${id} found` } }, 404);
-        }
 
         return c.json(
           {
-            data: {
-              ...result[0],
-              refs: result[0].refs ?? [],
-            },
+            data: result,
           },
           200
         );

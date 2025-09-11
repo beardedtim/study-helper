@@ -1,14 +1,12 @@
-import { useState } from "react";
-import { Box, Button, ButtonGroup, Text, Textarea } from "@chakra-ui/react";
+import { Box, Button, ButtonGroup, Textarea } from "@chakra-ui/react";
 import { Prose } from "@/components/ui/prose";
 
-import "./App.css";
-import useAsk from "./hooks/useAsk";
+import "./style.css";
+import useAsk from "../../hooks/useAsk";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 function App() {
-  const [count, setCount] = useState(0);
   const { ask, query, why, setQuery, setWhy, response } = useAsk();
 
   return (
